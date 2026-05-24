@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberShield — Cyber Threat Detection</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#060b14;color:#cdd6f4;min-height:100vh;display:flex}
+.sidebar{background:#0a1628;border-right:1px solid #1e2d45;width:220px;min-height:100vh;display:flex;flex-direction:column;flex-shrink:0}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid #1e2d45}
+.sb-logo-icon{width:36px;height:36px;background:#00d4ff18;border:1px solid #00d4ff44;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.sb-logo-icon svg{width:18px;height:18px;fill:#00d4ff}
+.sb-title{font-size:14px;font-weight:700;color:#e2e8f0}
+.sb-sub{font-size:10px;color:#00d4ff;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.sb-nav{padding:12px 10px;flex:1}
+.sb-section{font-size:9px;color:#4a5568;text-transform:uppercase;letter-spacing:1.5px;padding:8px 8px 4px;font-weight:600}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:12px;color:#8892a4;cursor:pointer;margin-bottom:2px;transition:all .15s;border:1px solid transparent;text-decoration:none}
+.sb-item:hover{background:#ffffff08;color:#cdd6f4}
+.sb-item.active{background:#00d4ff12;border-color:#00d4ff28;color:#00d4ff}
+.sb-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.sb-item.active .sb-icon{opacity:1}
+.sb-badge{margin-left:auto;background:#f8514922;color:#f85149;font-size:9px;padding:1px 6px;border-radius:10px;font-weight:700}
+.sb-status{padding:14px 18px;border-top:1px solid #1e2d45}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;display:inline-block;margin-left:6px}
+.sb-status-txt{font-size:11px;color:#4a5568}
+.main-area{flex:1;display:flex;flex-direction:column}
+.topbar{background:#0a1628;border-bottom:1px solid #1e2d45;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.tb-title{font-size:13px;font-weight:700;color:#e2e8f0}
+.tb-sub{font-size:11px;color:#4a5568;margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:12px}
+.tb-time{font-size:11px;color:#4a5568;font-family:monospace}
+.threat-level{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;background:#f8514914;border:1px solid #f8514933;color:#f85149}
+.tl-dot{width:6px;height:6px;border-radius:50%;background:#f85149;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tab-btn{padding:10px 18px;font-size:12px;font-weight:700;color:#4a5568;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.3px}
+.tab-btn:hover{color:#8892a4}
+.tab-btn.active{color:#00d4ff;border-bottom-color:#00d4ff}
+.tab-content{display:none;flex-direction:column;gap:14px}
+.tab-content.active{display:flex}
+.content{padding:16px;flex:1;display:flex;flex-direction:column;gap:14px}
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:#0a1628;border:1px solid #1e2d45;border-radius:10px;padding:14px;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.blue::before{background:#00d4ff}
+.stat.red::before{background:#f85149}
+.stat.green::before{background:#00ff88}
+.stat.amber::before{background:#f6ad55}
+.stat-label{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600}
+.stat-val{font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat.blue .stat-val{color:#00d4ff}
+.stat.red .stat-val{color:#f85149}
+.stat.green .stat-val{color:#00ff88}
+.stat.amber .stat-val{color:#f6ad55}
+.stat-note{font-size:10px;color:#4a5568}
+.mid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:14px}
+.panel{background:#0a1628;border:1px solid #1e2d45;border-radius:10px;padding:16px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1e2d4540}
+.panel-title{font-size:11px;font-weight:700;color:#8892a4;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:7px}
+.pt-dot{width:6px;height:6px;border-radius:50%}
+.scan-wrap{display:flex;flex-direction:column;gap:10px}
+.scan-field{background:#060b14;border:1px solid #1e2d45;border-radius:8px;padding:10px 14px;font-size:13px;color:#cdd6f4;outline:none;width:100%;font-family:monospace;transition:border-color .2s}
+.scan-field:focus{border-color:#00d4ff55;box-shadow:0 0 0 3px #00d4ff0a}
+.type-row{display:flex;gap:6px}
+.tb{padding:5px 14px;border-radius:20px;font-size:11px;border:1px solid #1e2d45;background:none;color:#4a5568;cursor:pointer;transition:all .15s;font-weight:600}
+.tb.on{background:#00d4ff14;border-color:#00d4ff44;color:#00d4ff}
+.scan-go{width:100%;background:#00d4ff;color:#060b14;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.scan-go:hover{background:#22deff}
+.scan-go:disabled{background:#1e2d45;color:#4a5568;cursor:not-allowed}
+.res-box{background:#060b14;border:1px solid #1e2d45;border-radius:8px;padding:16px;min-height:280px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#4a5568}
+.res-content{width:100%}
+.res-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #1e2d4540}
+.res-score-big{font-size:48px;font-weight:800;line-height:1}
+.res-score-total{font-size:18px;font-weight:400;color:#4a5568}
+.res-verdict{display:inline-block;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:1px;margin-top:6px}
+.rv-mal{background:#f8514918;color:#f85149;border:1px solid #f8514944}
+.rv-sus{background:#f6ad5518;color:#f6ad55;border:1px solid #f6ad5544}
+.rv-cln{background:#00ff8818;color:#00ff88;border:1px solid #00ff8844}
+.res-right{text-align:right}
+.threat-type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:8px}
+.ttb-mal{background:#f8514910;border:1px solid #f8514933;color:#f85149}
+.ttb-sus{background:#f6ad5510;border:1px solid #f6ad5533;color:#f6ad55}
+.ttb-cln{background:#00ff8810;border:1px solid #00ff8833;color:#00ff88}
+.res-target{font-size:10px;color:#4a5568;font-family:monospace;word-break:break-all;margin-top:4px}
+.eng-section{margin-bottom:14px}
+.eng-title{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600}
+.eng-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.eng-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#0d1f35;border-radius:6px;border:1px solid #1e2d4530}
+.eng-name{font-size:11px;color:#8892a4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px}
+.eng-verdict{font-size:10px;padding:1px 7px;border-radius:4px;font-weight:600;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+.ev-mal{color:#f85149;background:#f8514910}
+.ev-sus{color:#f6ad55;background:#f6ad5510}
+.ev-cln{color:#00ff88;background:#00ff8810}
+.threat-feed{display:flex;flex-direction:column;gap:7px;max-height:320px;overflow-y:auto}
+.tf-row{display:flex;align-items:center;gap:9px;padding:10px 11px;background:#060b14;border-radius:8px;border:1px solid #1e2d4530;font-size:11px;transition:border-color .15s}
+.tf-row:hover{border-color:#1e2d45}
+.tf-sev{padding:3px 8px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.5px;min-width:60px;text-align:center}
+.sc{background:#f8514912;color:#f85149;border:1px solid #f8514933}
+.sh{background:#ff7b7212;color:#ff7b72;border:1px solid #ff7b7233}
+.sm2{background:#f6ad5512;color:#f6ad55;border:1px solid #f6ad5533}
+.tf-info{flex:1;overflow:hidden}
+.tf-name{color:#8892a4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:10px}
+.tf-type{font-size:10px;color:#4a5568;margin-top:2px}
+.tf-score{font-family:monospace;font-size:10px;color:#00d4ff;background:#00d4ff0a;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.tf-time{color:#2d3748;font-size:10px;font-family:monospace;white-space:nowrap}
+.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bar-section{display:flex;flex-direction:column;gap:10px}
+.bar-item{display:flex;align-items:center;gap:10px}
+.bl{color:#4a5568;width:86px;text-align:right;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
+.bt{flex:1;background:#0d1f35;border-radius:3px;height:6px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .6s ease}
+.bv{color:#8892a4;width:36px;font-size:10px;font-family:monospace;text-align:right}
+.spinner{width:16px;height:16px;border:2px solid #1e2d45;border-top-color:#00d4ff;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.drop-zone{border:2px dashed #1e2d45;border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#060b14;position:relative}
+.drop-zone:hover,.drop-zone.dragover{border-color:#00d4ff55;background:#00d4ff08}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{width:44px;height:44px;background:#1e2d45;border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.drop-icon svg{width:22px;height:22px;fill:#4a5568}
+.drop-title{font-size:13px;font-weight:600;color:#8892a4;margin-bottom:5px}
+.drop-sub{font-size:11px;color:#4a5568}
+.drop-types{display:flex;gap:5px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.type-tag{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:#1e2d45;color:#4a5568}
+.file-preview-bar{background:#060b14;border:1px solid #1e2d45;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:8px}
+.fp-icon{width:36px;height:36px;background:#00d4ff14;border:1px solid #00d4ff33;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fp-icon svg{width:18px;height:18px;fill:#00d4ff}
+.fp-info{flex:1}
+.fp-name{font-size:12px;font-weight:600;color:#e2e8f0;font-family:monospace}
+.fp-size{font-size:10px;color:#4a5568;margin-top:2px}
+.fp-remove{background:none;border:none;color:#4a5568;cursor:pointer;font-size:16px;transition:color .15s}
+.fp-remove:hover{color:#f85149}
+.file-res-box{background:#060b14;border:1px solid #1e2d45;border-radius:8px;padding:14px;min-height:200px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#4a5568}
+.progress-steps{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.pstep{display:flex;align-items:center;gap:8px;font-size:11px;color:#4a5568}
+.pstep.done{color:#00ff88}
+.pstep.active{color:#00d4ff}
+.pstep-dot{width:7px;height:7px;border-radius:50%;background:#1e2d45;flex-shrink:0}
+.pstep.done .pstep-dot{background:#00ff88}
+.pstep.active .pstep-dot{background:#00d4ff;animation:pulse 1s infinite}
+.prog-bar{height:5px;background:#1e2d45;border-radius:3px;overflow:hidden;margin:8px 0 4px}
+.prog-fill{height:100%;background:#00d4ff;border-radius:3px;transition:width .4s}
+.res-stats-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.rsm{background:#0d1f35;border-radius:6px;padding:10px;text-align:center}
+.rsm-val{font-size:20px;font-weight:700}
+.rsm-label{font-size:10px;color:#4a5568;margin-top:2px}
+.threat-badge{display:inline-block;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:700}
+.tb-mal{background:#f8514910;border:1px solid #f8514933;color:#f85149}
+.tb-sus{background:#f6ad5510;border:1px solid #f6ad5533;color:#f6ad55}
+.tb-cln{background:#00ff8810;border:1px solid #00ff8833;color:#00ff88}
+
+.notif-container{position:fixed;top:20px;left:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:340px}
+.notif{background:#0a1628;border:1px solid #1e2d45;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;pointer-events:all;animation:slideIn .3s ease;position:relative;overflow:hidden}
+.notif::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
+.notif.critical::before{background:#f85149}
+.notif.high::before{background:#ff7b72}
+.notif.medium::before{background:#f6ad55}
+.notif.safe::before{background:#00ff88}
+@keyframes slideIn{from{transform:translateX(-120%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(-120%);opacity:0}}
+.notif.removing{animation:slideOut .3s ease forwards}
+.notif-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif.critical .notif-icon{background:#f8514918;border:1px solid #f8514933}
+.notif.high .notif-icon{background:#ff7b7218;border:1px solid #ff7b7233}
+.notif.medium .notif-icon{background:#f6ad5518;border:1px solid #f6ad5533}
+.notif.safe .notif-icon{background:#00ff8818;border:1px solid #00ff8833}
+.notif-icon svg{width:14px;height:14px}
+.notif.critical .notif-icon svg{fill:#f85149}
+.notif.high .notif-icon svg{fill:#ff7b72}
+.notif.medium .notif-icon svg{fill:#f6ad55}
+.notif.safe .notif-icon svg{fill:#00ff88}
+.notif-body{flex:1;min-width:0}
+.notif-title{font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:3px}
+.notif-msg{font-size:11px;color:#8892a4;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notif-time{font-size:10px;color:#4a5568;margin-top:4px;font-family:monospace}
+.notif-close{background:none;border:none;color:#4a5568;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0;transition:color .15s}
+.notif-close:hover{color:#e2e8f0}
+.notif-progress{position:absolute;bottom:0;left:0;height:2px;background:#ffffff15;animation:notifProg 5s linear forwards}
+@keyframes notifProg{from{width:100%}to{width:0%}}
+.notif-bell{position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;transition:background .15s}
+.notif-bell:hover{background:#ffffff08}
+.notif-bell-badge{position:absolute;top:-3px;right:-3px;width:16px;height:16px;background:#f85149;border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;animation:pulse 1.5s infinite}
+.notif-panel{background:#0a1628;border:1px solid #1e2d45;border-radius:12px;width:300px;position:absolute;top:38px;right:0;z-index:9999;overflow:hidden;box-shadow:0 8px 32px #00000066}
+.notif-panel-header{padding:12px 16px;border-bottom:1px solid #1e2d45;display:flex;align-items:center;justify-content:space-between}
+.notif-panel-title{font-size:12px;font-weight:700;color:#e2e8f0}
+.notif-clear{font-size:10px;color:#4a5568;background:none;border:none;cursor:pointer;transition:color .15s}
+.notif-clear:hover{color:#f85149}
+.notif-list{max-height:300px;overflow-y:auto}
+.nli{padding:11px 16px;border-bottom:1px solid #1e2d4530;display:flex;gap:10px;align-items:flex-start;transition:background .15s}
+.nli:hover{background:#ffffff04}
+.nli:last-child{border-bottom:none}
+.nli-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.nli-body{flex:1;min-width:0}
+.nli-title{font-size:11px;font-weight:600;color:#e2e8f0;margin-bottom:2px}
+.nli-target{font-size:10px;color:#8892a4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace}
+.nli-time{font-size:10px;color:#4a5568;margin-top:2px;font-family:monospace}
+.notif-empty{padding:24px;text-align:center;font-size:11px;color:#2d3748}
+</style>
+</head>
+<body>
+
+<div class="notif-container" id="notif-container"></div>
+
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">
+      <svg viewBox="0 0 16 16"><path d="M8 1L1 4v4c0 4 3 6.5 7 8 4-1.5 7-4 7-8V4L8 1z"/></svg>
+    </div>
+    <div class="sb-title">CyberShield</div>
+    <div class="sb-sub">Cyber Threat Detection</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="sb-item active" href="http://127.0.0.1:5000/app">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg>
+      Dashboard
+    </a>
+    <a class="sb-item" href="http://127.0.0.1:5000/history-page">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3h14v2H1zm0 4h14v2H1zm0 4h14v2H1z"/></svg>
+      Threat Log
+      <span class="sb-badge" id="sb-count">0</span>
+    </a>
+    <div class="sb-section" style="margin-top:8px">Analysis</div>
+    <a class="sb-item" href="http://127.0.0.1:5000/statistics-page">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M0 11l4-4 3 3 5-6 4 4v4H0z"/></svg>
+      Statistics
+    </a>
+  </div>
+  <div class="sb-status">
+    <div style="font-size:11px;color:#2d3748;margin-bottom:4px">System Status</div>
+    <div style="display:flex;align-items:center">
+      <span class="sb-dot" style="animation:pulse 2s infinite"></span>
+      <span class="sb-status-txt">Detection Engine Active</span>
+    </div>
+  </div>
+</div>
+
+<div class="main-area">
+  <div class="topbar">
+    <div>
+      <div class="tb-title">Cyber Threat Detection Platform</div>
+      <div class="tb-sub">Real-time threat analysis & monitoring</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-time" id="clock">--:--:--</div>
+      <div class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="#8892a4"><path d="M8 1a5 5 0 00-5 5v3l-1 2h12l-1-2V6a5 5 0 00-5-5zm0 13a2 2 0 01-2-2h4a2 2 0 01-2 2z"/></svg>
+        <div class="notif-bell-badge hidden" id="notif-badge">0</div>
+        <div class="notif-panel hidden" id="notif-panel" onclick="event.stopPropagation()">
+          <div class="notif-panel-header">
+            <span class="notif-panel-title">Threat Alerts</span>
+            <button class="notif-clear" onclick="clearAllNotifs()">Clear all</button>
+          </div>
+          <div class="notif-list" id="notif-list">
+            <div class="notif-empty">No alerts yet</div>
+          </div>
+        </div>
+      </div>
+      <div class="threat-level"><div class="tl-dot"></div>THREAT LEVEL: HIGH</div>
+    </div>
+  </div>
+
+  <div style="background:#0a1628;border-bottom:1px solid #1e2d45;padding:0 20px;display:flex;gap:4px">
+  <button class="tab-btn active" id="tab-url" onclick="switchTab('url')">
+    URL / IP Scan
+  </button>
+
+  <button class="tab-btn" id="tab-file" onclick="switchTab('file')">
+    File Scanner
+  </button>
+
+  <!-- زر Detect With AI -->
+  <button class="tab-btn" onclick="window.open('https://myproject-9ds0.onrender.com/','_blank')">
+    Detect With AI
+  </button>
+</div>
+
+  <div class="content">
+
+    <div class="tab-content active" id="tab-url-content">
+      <div class="stats-row">
+        <div class="stat blue">
+          <div class="stat-label">Total Scans</div>
+          <div class="stat-val" id="s-total">0</div>
+          <div class="stat-note">since session start</div>
+        </div>
+        <div class="stat red">
+          <div class="stat-label">Threats Detected</div>
+          <div class="stat-val" id="s-threats">0</div>
+          <div class="stat-note">malicious targets</div>
+        </div>
+        <div class="stat green">
+          <div class="stat-label">Clean Targets</div>
+          <div class="stat-val" id="s-clean">0</div>
+          <div class="stat-note">no threat found</div>
+        </div>
+        <div class="stat amber">
+          <div class="stat-label">Last Scan</div>
+          <div class="stat-val" id="s-last" style="font-size:14px;padding-top:6px">—</div>
+          <div class="stat-note">timestamp</div>
+        </div>
+      </div>
+
+      <div class="mid">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#00d4ff"></div>Scan Target</div>
+            <div style="font-size:10px;color:#00d4ff;font-weight:700;letter-spacing:.5px">CTD ENGINE</div>
+          </div>
+          <div class="scan-wrap">
+            <input class="scan-field" id="scan-input" placeholder="Enter URL or IP address to analyze…"/>
+            <div class="type-row">
+              <button class="tb on" onclick="setT(this,'url')">URL</button>
+              <button class="tb" onclick="setT(this,'ip')">IP Address</button>
+            </div>
+            <button class="scan-go" id="scan-btn" onclick="doScan()">ANALYZE TARGET</button>
+            <div class="res-box" id="res-area"><span>Awaiting target input…</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#f85149"></div>Live Threat Feed</div>
+            <div style="font-size:10px;color:#4a5568" id="feed-count">0 threats</div>
+          </div>
+          <div class="threat-feed" id="threat-feed">
+            <div style="text-align:center;color:#2d3748;font-size:11px;padding:30px 0">No threats detected — monitoring active…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#f6ad55"></div>Threat Category Breakdown</div>
+            <div style="font-size:10px;color:#4a5568">based on actual scans</div>
+          </div>
+          <div class="bar-section" id="breakdown-bars">
+            <div style="text-align:center;color:#2d3748;font-size:11px;padding:20px 0">Scan a target to see live breakdown…</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#00ff88"></div>Session Summary</div>
+          </div>
+          <div class="bar-section">
+            <div class="bar-item"><div class="bl">Malicious</div><div class="bt"><div class="bf" id="bar-mal" style="width:0%;background:#f85149"></div></div><div class="bv" id="pct-mal">0%</div></div>
+            <div class="bar-item"><div class="bl">Suspicious</div><div class="bt"><div class="bf" id="bar-sus" style="width:0%;background:#f6ad55"></div></div><div class="bv" id="pct-sus">0%</div></div>
+            <div class="bar-item"><div class="bl">Clean</div><div class="bt"><div class="bf" id="bar-cln" style="width:0%;background:#00ff88"></div></div><div class="bv" id="pct-cln">0%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-file-content">
+      <div class="mid">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#00d4ff"></div>Upload File for Analysis</div>
+            <div style="font-size:10px;color:#00d4ff;font-weight:700">CTD FILE ENGINE</div>
+          </div>
+          <div style="background:#f6ad5510;border:1px solid #f6ad5533;border-radius:8px;padding:10px 14px;font-size:11px;color:#f6ad55;margin-bottom:12px">
+            Max 32MB — EXE, PDF, DOC, ZIP, APK, DLL supported
+          </div>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="file-input" onchange="handleFile(this.files[0])"/>
+            <div class="drop-icon">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM12 17l-4-4h2.5v-4h3v4H16l-4 4z"/></svg>
+            </div>
+            <div class="drop-title">Drop file here or click to browse</div>
+            <div class="drop-sub">File will be analyzed by 70+ engines</div>
+            <div class="drop-types">
+              <span class="type-tag">EXE</span><span class="type-tag">PDF</span>
+              <span class="type-tag">DOC</span><span class="type-tag">ZIP</span>
+              <span class="type-tag">APK</span><span class="type-tag">DLL</span>
+            </div>
+          </div>
+          <div class="file-preview-bar hidden" id="file-preview">
+            <div class="fp-icon">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5z"/></svg>
+            </div>
+            <div class="fp-info">
+              <div class="fp-name" id="fp-name">—</div>
+              <div class="fp-size" id="fp-size">—</div>
+            </div>
+            <button class="fp-remove" onclick="removeFile()">✕</button>
+          </div>
+          <button class="scan-go" id="file-scan-btn" onclick="doFileScan()" disabled style="margin-top:10px">SELECT A FILE FIRST</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><div class="pt-dot" style="background:#f85149"></div>File Analysis Result</div>
+          </div>
+          <div id="file-progress" class="hidden">
+            <div style="font-size:11px;color:#4a5568;display:flex;justify-content:space-between;margin-bottom:4px">
+              <span id="prog-text">Uploading…</span><span id="prog-pct">0%</span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+            <div class="progress-steps">
+              <div class="pstep active" id="ps1"><div class="pstep-dot"></div>Uploading file</div>
+              <div class="pstep" id="ps2"><div class="pstep-dot"></div>Sending to 70+ engines</div>
+              <div class="pstep" id="ps3"><div class="pstep-dot"></div>Collecting results</div>
+              <div class="pstep" id="ps4"><div class="pstep-dot"></div>Generating report</div>
+            </div>
+          </div>
+          <div class="file-res-box" id="file-res-area">
+            <span>Upload a file to see analysis results…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let sType='url', threats=0, cleans=0, total=0, suspicious=0;
+let breakdown={}, selectedFile=null;
+let notifHistory=[], notifPanelOpen=false;
+
+setInterval(()=>{
+  const t=document.getElementById('clock');
+  if(t) t.textContent=new Date().toLocaleTimeString('en-GB');
+},1000);
+
+if('Notification' in window && Notification.permission==='default'){
+  Notification.requestPermission();
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab+'-content').classList.add('active');
+}
+
+function setT(btn,type){
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); sType=type;
+  document.getElementById('scan-input').placeholder=
+    type==='url'?'Enter URL e.g. http://example.com':'Enter IP e.g. 185.220.101.47';
+}
+
+function updateBars(){
+  const t=total||1;
+  const mp=Math.round(threats/t*100);
+  const sp=Math.round(suspicious/t*100);
+  const cp=Math.round(cleans/t*100);
+  document.getElementById('bar-mal').style.width=mp+'%';
+  document.getElementById('bar-sus').style.width=sp+'%';
+  document.getElementById('bar-cln').style.width=cp+'%';
+  document.getElementById('pct-mal').textContent=mp+'%';
+  document.getElementById('pct-sus').textContent=sp+'%';
+  document.getElementById('pct-cln').textContent=cp+'%';
+}
+
+function updateBreakdown(threatType){
+  if(threatType && threatType!=='Clean'){
+    breakdown[threatType]=(breakdown[threatType]||0)+1;
+  }
+  const total_b=Object.values(breakdown).reduce((a,b)=>a+b,0)||1;
+  const colors={'Malware':'#f85149','Ransomware':'#ff4444','Trojan':'#ff7b72','Phishing':'#f6ad55','Spyware':'#d69e2e','Adware':'#00d4ff','Suspicious':'#8892a4'};
+  const sorted=Object.entries(breakdown).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length===0) return;
+  document.getElementById('breakdown-bars').innerHTML=sorted.map(([type,count])=>{
+    const pct=Math.round(count/total_b*100);
+    return `<div class="bar-item"><div class="bl">${type}</div><div class="bt"><div class="bf" style="width:${pct}%;background:${colors[type]||'#8892a4'}"></div></div><div class="bv">${pct}%</div></div>`;
+  }).join('');
+}
+
+function showNotif(type, title, message, target){
+  const id='notif-'+Date.now();
+  const time=new Date().toLocaleTimeString('en-GB');
+  notifHistory.unshift({type,title,message,target,time});
+  updateNotifBadge();
+  updateNotifPanel();
+  const container=document.getElementById('notif-container');
+  const el=document.createElement('div');
+  el.className='notif '+type;
+  el.id=id;
+  const icons={
+    critical:'<path d="M8 1L1 14h14L8 1zm0 4v4m0 2v1"/>',
+    high:'<path d="M8 1L1 14h14L8 1zm0 4v4m0 2v1"/>',
+    medium:'<path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4m0 2v1"/>',
+    safe:'<path d="M8 1L1 4v4c0 4 3 6.5 7 8 4-1.5 7-4 7-8V4L8 1z"/>'
+  };
+  el.innerHTML=`
+    <div class="notif-icon"><svg viewBox="0 0 16 16">${icons[type]||icons.medium}</svg></div>
+    <div class="notif-body">
+      <div class="notif-title">${title}</div>
+      <div class="notif-msg">${message}</div>
+      <div class="notif-time">${time}</div>
+    </div>
+    <button class="notif-close" onclick="removeNotif('${id}')">✕</button>
+    <div class="notif-progress"></div>`;
+  container.prepend(el);
+  if(container.children.length>4) container.removeChild(container.lastChild);
+  setTimeout(()=>removeNotif(id),5000);
+  if('Notification' in window && Notification.permission==='granted'){
+    new Notification('CyberShield — '+title,{body:message});
+  }
+}
+
+function removeNotif(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.add('removing');
+  setTimeout(()=>el.remove(),300);
+}
+
+function updateNotifBadge(){
+  const badge=document.getElementById('notif-badge');
+  const count=notifHistory.filter(n=>n.type!=='safe').length;
+  if(count>0){badge.classList.remove('hidden');badge.textContent=count>99?'99+':count;}
+  else badge.classList.add('hidden');
+}
+
+function updateNotifPanel(){
+  const list=document.getElementById('notif-list');
+  if(notifHistory.length===0){list.innerHTML='<div class="notif-empty">No alerts yet</div>';return;}
+  const dotColors={critical:'#f85149',high:'#ff7b72',medium:'#f6ad55',safe:'#00ff88'};
+  list.innerHTML=notifHistory.slice(0,20).map(n=>`
+    <div class="nli">
+      <div class="nli-dot" style="background:${dotColors[n.type]||'#8892a4'}"></div>
+      <div class="nli-body">
+        <div class="nli-title">${n.title}</div>
+        <div class="nli-target">${n.target}</div>
+        <div class="nli-time">${n.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(){
+  const panel=document.getElementById('notif-panel');
+  notifPanelOpen=!notifPanelOpen;
+  panel.classList.toggle('hidden',!notifPanelOpen);
+}
+
+function clearAllNotifs(){
+  notifHistory=[];
+  updateNotifBadge();
+  updateNotifPanel();
+  document.getElementById('notif-container').innerHTML='';
+}
+
+document.addEventListener('click',e=>{
+  const bell=document.getElementById('notif-bell');
+  if(bell && !bell.contains(e.target)){
+    document.getElementById('notif-panel').classList.add('hidden');
+    notifPanelOpen=false;
+  }
+});
+
+async function doScan(){
+  const target=document.getElementById('scan-input').value.trim();
+  if(!target) return;
+  const btn=document.getElementById('scan-btn');
+  const area=document.getElementById('res-area');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> ANALYZING…';
+  area.innerHTML=`<div style="text-align:center"><span class="spinner"></span><div style="font-size:11px;color:#4a5568;margin-top:10px">Querying 70+ detection engines…</div><div style="font-size:10px;color:#2d3748;margin-top:4px">This may take 15–20 seconds</div></div>`;
+  try{
+    const r=await fetch('http://127.0.0.1:5000/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,type:sType})});
+    const d=await r.json();
+    total++;
+    document.getElementById('s-total').textContent=total;
+    document.getElementById('s-last').textContent=new Date().toLocaleTimeString('en-GB');
+    const isMal=d.malicious>0;
+    const isSus=d.suspicious>0&&d.malicious===0;
+    if(isMal){threats++;document.getElementById('s-threats').textContent=threats;}
+    else if(isSus){suspicious++;}
+    else{cleans++;document.getElementById('s-clean').textContent=cleans;}
+    document.getElementById('sb-count').textContent=threats;
+    document.getElementById('feed-count').textContent=threats+' threats';
+    updateBars();
+    updateBreakdown(d.threat_type);
+
+    if(isMal){
+      const sev=d.malicious>20?'critical':d.malicious>8?'high':'medium';
+      showNotif(sev,
+        sev==='critical'?'CRITICAL THREAT DETECTED':sev==='high'?'High Severity Threat':'Medium Severity Threat',
+        `${d.threat_type||'Malware'} — ${d.malicious}/${d.total} engines flagged`,
+        target);
+    } else if(isSus){
+      showNotif('medium','Suspicious Target Detected',`${d.suspicious} engines flagged as suspicious`,target);
+    } else {
+      showNotif('safe','Target is Clean',`0/${d.total} engines flagged`,target);
+    }
+
+    const scoreColor=d.malicious>15?'#f85149':d.malicious>0?'#f6ad55':'#00ff88';
+    const verdict=d.verdict||'CLEAN';
+    const vclass=verdict==='MALICIOUS'?'rv-mal':verdict==='SUSPICIOUS'?'rv-sus':'rv-cln';
+    const ttbclass=verdict==='MALICIOUS'?'ttb-mal':verdict==='SUSPICIOUS'?'ttb-sus':'ttb-cln';
+    const engHtml=(d.engines||[]).map(e=>{
+      const ec=e.cat==='malicious'?'ev-mal':e.cat==='suspicious'?'ev-sus':'ev-cln';
+      const vt=e.cat==='malicious'?e.verdict:'Clean';
+      return `<div class="eng-item"><span class="eng-name" title="${e.name}">${e.name}</span><span class="eng-verdict ${ec}">${vt.length>14?vt.slice(0,14)+'…':vt}</span></div>`;
+    }).join('');
+    area.innerHTML=`<div class="res-content"><div class="res-top"><div><div class="res-score-big" style="color:${scoreColor}">${d.malicious}<span class="res-score-total">/${d.total}</span></div><span class="res-verdict ${vclass}">${verdict}</span></div><div class="res-right"><div class="threat-type-badge ${ttbclass}">${d.threat_type||'Unknown'}</div><div class="res-target">${target}</div><div style="font-size:10px;color:#4a5568;margin-top:6px">Malicious: ${d.malicious} | Suspicious: ${d.suspicious} | Clean: ${d.clean}</div></div></div><div class="eng-section"><div class="eng-title">Engine Results</div><div class="eng-grid">${engHtml}</div></div></div>`;
+    if(isMal||isSus){
+      const feed=document.getElementById('threat-feed');
+      const empty=feed.querySelector('div[style*="text-align"]');
+      if(empty) feed.innerHTML='';
+      const sev=d.malicious>20?'sc':d.malicious>8?'sh':'sm2';
+      const sevT=d.malicious>20?'CRITICAL':d.malicious>8?'HIGH':'MEDIUM';
+      const row=document.createElement('div');
+      row.className='tf-row';
+      row.innerHTML=`<span class="tf-sev ${sev}">${sevT}</span><div class="tf-info"><div class="tf-name">${target}</div><div class="tf-type">${d.threat_type||'Unknown threat'}</div></div><span class="tf-score">${d.malicious}/${d.total}</span><span class="tf-time">${new Date().toLocaleTimeString('en-GB')}</span>`;
+      feed.prepend(row);
+    }
+  }catch(e){
+    document.getElementById('res-area').innerHTML='<div style="color:#f85149;font-size:12px;text-align:center;padding:20px">Connection error — ensure backend is running on port 5000 </div>';
+  }
+  btn.disabled=false;
+  btn.textContent='ANALYZE TARGET';
+}
+
+const dropZone=document.getElementById('drop-zone');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+
+function handleFile(file){
+  if(!file) return;
+  if(file.size>32*1024*1024){alert('File too large — max 32MB');return;}
+  selectedFile=file;
+  document.getElementById('fp-name').textContent=file.name;
+  document.getElementById('fp-size').textContent=formatFileSize(file.size);
+  document.getElementById('file-preview').classList.remove('hidden');
+  document.getElementById('drop-zone').style.opacity='.5';
+  document.getElementById('file-scan-btn').disabled=false;
+  document.getElementById('file-scan-btn').textContent='ANALYZE FILE';
+  document.getElementById('file-res-area').innerHTML='<span>Ready — click ANALYZE FILE</span>';
+  document.getElementById('file-progress').classList.add('hidden');
+}
+
+function removeFile(){
+  selectedFile=null;
+  document.getElementById('file-preview').classList.add('hidden');
+  document.getElementById('drop-zone').style.opacity='1';
+  document.getElementById('file-input').value='';
+  document.getElementById('file-scan-btn').disabled=true;
+  document.getElementById('file-scan-btn').textContent='SELECT A FILE FIRST';
+}
+
+function formatFileSize(bytes){
+  if(bytes<1024) return bytes+' B';
+  if(bytes<1048576) return Math.round(bytes/1024)+' KB';
+  return (bytes/1048576).toFixed(1)+' MB';
+}
+
+function setProgStep(n,pct,text){
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('ps'+i);
+    el.className='pstep'+(i<n?' done':i===n?' active':'');
+  }
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-text').textContent=text;
+}
+
+async function doFileScan(){
+  if(!selectedFile) return;
+  const btn=document.getElementById('file-scan-btn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> ANALYZING…';
+  document.getElementById('file-progress').classList.remove('hidden');
+  document.getElementById('file-res-area').innerHTML='';
+  setProgStep(1,10,'Uploading file…');
+  await new Promise(r=>setTimeout(r,800));
+  setProgStep(2,35,'Distributing to engines…');
+  await new Promise(r=>setTimeout(r,800));
+  setProgStep(3,65,'Collecting results…');
+  const formData=new FormData();
+  formData.append('file',selectedFile);
+  try{
+    const response=await fetch('http://127.0.0.1:5000/scan-file',{method:'POST',body:formData});
+    setProgStep(4,90,'Generating report…');
+    await new Promise(r=>setTimeout(r,400));
+    const d=await response.json();
+    setProgStep(4,100,'Complete');
+    document.getElementById('file-progress').classList.add('hidden');
+
+    if(d.malicious>0){
+      const sev=d.malicious>20?'critical':d.malicious>8?'high':'medium';
+      showNotif(sev,'Malicious File Detected',`${d.threat_type||'Malware'} — ${d.malicious}/${d.total} engines flagged`,d.target);
+    } else {
+      showNotif('safe','File is Clean',`${d.target} — no threats found`,d.target);
+    }
+
+    const scoreColor=d.malicious>15?'#f85149':d.malicious>0?'#f6ad55':'#00ff88';
+    const verdict=d.verdict||'CLEAN';
+    const vclass=verdict==='MALICIOUS'?'rv-mal':verdict==='SUSPICIOUS'?'rv-sus':'rv-cln';
+    const tbclass=verdict==='MALICIOUS'?'tb-mal':verdict==='SUSPICIOUS'?'tb-sus':'tb-cln';
+    const engHtml=(d.engines||[]).map(e=>{
+      const ec=e.cat==='malicious'?'ev-mal':e.cat==='suspicious'?'ev-sus':'ev-cln';
+      const vt=e.cat==='malicious'?(e.verdict.length>14?e.verdict.slice(0,14)+'…':e.verdict):'Clean';
+      return `<div class="eng-item"><span class="eng-name">${e.name}</span><span class="eng-verdict ${ec}">${vt}</span></div>`;
+    }).join('');
+    document.getElementById('file-res-area').style='';
+    document.getElementById('file-res-area').innerHTML=`
+      <div style="width:100%">
+        <div class="res-top" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #1e2d4540">
+          <div>
+            <div class="res-score-big" style="color:${scoreColor};font-size:40px">${d.malicious}<span style="font-size:16px;color:#4a5568">/${d.total}</span></div>
+            <span class="res-verdict ${vclass}">${verdict}</span>
+          </div>
+          <div style="text-align:right">
+            <div class="threat-badge ${tbclass}" style="margin-bottom:6px">${d.threat_type||'Unknown'}</div>
+            <div style="font-size:10px;color:#4a5568;font-family:monospace">${d.target}</div>
+          </div>
+        </div>
+        <div class="res-stats-mini">
+          <div class="rsm"><div class="rsm-val" style="color:#f85149">${d.malicious}</div><div class="rsm-label">Malicious</div></div>
+          <div class="rsm"><div class="rsm-val" style="color:#f6ad55">${d.suspicious}</div><div class="rsm-label">Suspicious</div></div>
+          <div class="rsm"><div class="rsm-val" style="color:#00ff88">${d.clean}</div><div class="rsm-label">Clean</div></div>
+        </div>
+        <div class="eng-title" style="margin-bottom:8px">Engine Results</div>
+        <div class="eng-grid">${engHtml}</div>
+      </div>`;
+  }catch(e){
+    document.getElementById('file-progress').classList.add('hidden');
+    document.getElementById('file-res-area').innerHTML='<div style="color:#f85149;font-size:12px;text-align:center">Connection error — ensure backend is running</div>';
+  }
+  btn.disabled=false;
+  btn.textContent='ANALYZE FILE';
+}
+</script>
+</body>
+</html>

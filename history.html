@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberShield — Threat History</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#060b14;color:#cdd6f4;min-height:100vh}
+  .sidebar{background:#0a1628;border-right:1px solid #1e2d45;width:220px;position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column}
+  .sb-logo{padding:20px 18px 16px;border-bottom:1px solid #1e2d45}
+  .sb-logo-icon{width:36px;height:36px;background:#00d4ff18;border:1px solid #00d4ff44;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+  .sb-logo-icon svg{width:18px;height:18px;fill:#00d4ff}
+  .sb-title{font-size:14px;font-weight:700;color:#e2e8f0}
+  .sb-sub{font-size:10px;color:#00d4ff;letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+  .sb-nav{padding:12px 10px;flex:1}
+  .sb-section{font-size:9px;color:#4a5568;text-transform:uppercase;letter-spacing:1.5px;padding:8px 8px 4px;font-weight:600}
+  .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:12px;color:#8892a4;cursor:pointer;margin-bottom:2px;transition:all .15s;border:1px solid transparent;text-decoration:none}
+  .sb-item:hover{background:#ffffff08;color:#cdd6f4}
+  .sb-item.active{background:#00d4ff12;border-color:#00d4ff28;color:#00d4ff}
+  .sb-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+  .sb-item.active .sb-icon{opacity:1}
+  .sb-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;display:inline-block;margin-left:6px;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .sb-status{padding:14px 18px;border-top:1px solid #1e2d45}
+  .sb-status-txt{font-size:11px;color:#4a5568}
+  .main{margin-left:220px;padding:24px;min-height:100vh}
+  .page-header{margin-bottom:20px}
+  .page-title{font-size:20px;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+  .page-sub{font-size:12px;color:#4a5568}
+  .stats-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:#0a1628;border:1px solid #1e2d45;border-radius:10px;padding:16px;position:relative;overflow:hidden}
+  .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .stat.blue::before{background:#00d4ff}
+  .stat.red::before{background:#f85149}
+  .stat.green::before{background:#00ff88}
+  .stat-label{font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600}
+  .stat-val{font-size:30px;font-weight:700}
+  .stat.blue .stat-val{color:#00d4ff}
+  .stat.red .stat-val{color:#f85149}
+  .stat.green .stat-val{color:#00ff88}
+  .filters{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+  .filter-btn{padding:6px 16px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid #1e2d45;background:none;color:#4a5568;cursor:pointer;transition:all .15s}
+  .filter-btn.on{background:#00d4ff14;border-color:#00d4ff44;color:#00d4ff}
+  .search-box{background:#0a1628;border:1px solid #1e2d45;border-radius:8px;padding:7px 14px;font-size:12px;color:#cdd6f4;outline:none;width:240px;font-family:inherit}
+  .search-box:focus{border-color:#00d4ff55}
+  .search-box::placeholder{color:#2d3748}
+  .table-wrap{background:#0a1628;border:1px solid #1e2d45;border-radius:10px;overflow:hidden}
+  .table-head{display:grid;grid-template-columns:50px 1fr 80px 90px 90px 100px 140px;padding:10px 16px;background:#060b14;font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:.8px;font-weight:600;border-bottom:1px solid #1e2d45}
+  .table-row{display:grid;grid-template-columns:50px 1fr 80px 90px 90px 100px 140px;padding:12px 16px;border-bottom:1px solid #1e2d4530;font-size:12px;align-items:center;transition:background .15s}
+  .table-row:hover{background:#ffffff04}
+  .table-row:last-child{border-bottom:none}
+  .row-id{color:#2d3748;font-family:monospace;font-size:11px}
+  .row-target{color:#8892a4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:12px}
+  .row-type{color:#4a5568;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+  .row-score{font-family:monospace;font-size:12px}
+  .score-bad{color:#f85149}
+  .score-warn{color:#f6ad55}
+  .score-good{color:#00ff88}
+  .verdict-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.5px}
+  .vp-mal{background:#f8514912;color:#f85149;border:1px solid #f8514933}
+  .vp-sus{background:#f6ad5512;color:#f6ad55;border:1px solid #f6ad5533}
+  .vp-cln{background:#00ff8812;color:#00ff88;border:1px solid #00ff8833}
+  .row-time{color:#2d3748;font-size:10px;font-family:monospace}
+  .empty{text-align:center;padding:48px;color:#2d3748;font-size:13px}
+  .refresh-btn{margin-left:auto;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid #1e2d45;background:none;color:#00d4ff;cursor:pointer;transition:all .15s}
+  .refresh-btn:hover{background:#00d4ff14}
+  .count-badge{font-size:11px;color:#4a5568;margin-left:4px}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon">
+      <svg viewBox="0 0 16 16"><path d="M8 1L1 4v4c0 4 3 6.5 7 8 4-1.5 7-4 7-8V4L8 1z"/></svg>
+    </div>
+    <div class="sb-title">CyberShield</div>
+    <div class="sb-sub">Threat Detection</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-section">Main</div>
+    <a class="sb-item" href="http://127.0.0.1:5000/app">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg>
+      Dashboard
+    </a>
+    <a class="sb-item active" href="http://127.0.0.1:5000/history-page">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M1 3h14v2H1zm0 4h14v2H1zm0 4h14v2H1z"/></svg>
+      Threat Log
+    </a>
+    <div class="sb-section" style="margin-top:8px">Analysis</div>
+    <a class="sb-item" href="http://127.0.0.1:5000/statistics-page">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M0 11l4-4 3 3 5-6 4 4v4H0z"/></svg>
+      Statistics
+    </a>
+    <a class="sb-item" href="http://127.0.0.1:5000/history-page">
+      <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2h8v2H4zm-2 3h12v9H2V5zm2 2v5h8V7H4z"/></svg>
+      Reports
+    </a>
+    <a class="sb-item" href="http://127.0.0.1:5000/upload-page">
+  <svg class="sb-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1v9M4 6l4-5 4 5M2 13h12v2H2z"/></svg>
+  File Scanner
+</a>
+  </div>
+  <div class="sb-status">
+    <div style="font-size:11px;color:#2d3748;margin-bottom:4px">System Status</div>
+    <div style="display:flex;align-items:center"><span class="sb-dot"></span><span class="sb-status-txt">Detection Engine Active</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div class="page-title">Threat History Log</div>
+    <div class="page-sub">All scan records — saved permanently in database</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat blue">
+      <div class="stat-label">Total Scans</div>
+      <div class="stat-val" id="st-total">—</div>
+    </div>
+    <div class="stat red">
+      <div class="stat-label">Threats Found</div>
+      <div class="stat-val" id="st-threats">—</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-label">Clean Targets</div>
+      <div class="stat-val" id="st-clean">—</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn on" onclick="setFilter(this,'ALL')">All</button>
+    <button class="filter-btn" onclick="setFilter(this,'MALICIOUS')">Malicious</button>
+    <button class="filter-btn" onclick="setFilter(this,'SUSPICIOUS')">Suspicious</button>
+    <button class="filter-btn" onclick="setFilter(this,'CLEAN')">Clean</button>
+    <input class="search-box" id="search" placeholder="Search target…" oninput="renderTable()"/>
+    <button class="refresh-btn" onclick="loadData()">Refresh</button>
+    <span class="count-badge" id="count-badge"></span>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>#</div>
+      <div>Target</div>
+      <div>Type</div>
+      <div>Score</div>
+      <div>Verdict</div>
+      <div>Engines</div>
+      <div>Scanned At</div>
+    </div>
+    <div id="table-body"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+let allData=[], currentFilter='ALL';
+
+async function loadData(){
+  try{
+    const [h,s]=await Promise.all([
+      fetch('http://127.0.0.1:5000/history').then(r=>r.json()),
+      fetch('http://127.0.0.1:5000/stats').then(r=>r.json())
+    ]);
+    allData=h;
+    document.getElementById('st-total').textContent=s.total;
+    document.getElementById('st-threats').textContent=s.threats;
+    document.getElementById('st-clean').textContent=s.clean;
+    renderTable();
+  }catch(e){
+    document.getElementById('table-body').innerHTML='<div class="empty">Connection error — make sure Flask is running on port 5000</div>';
+  }
+}
+
+function setFilter(btn, filter){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  currentFilter=filter;
+  renderTable();
+}
+
+function renderTable(){
+  const search=document.getElementById('search').value.toLowerCase();
+  let rows=allData.filter(r=>{
+    const matchFilter=currentFilter==='ALL'||r.verdict===currentFilter;
+    const matchSearch=r.target.toLowerCase().includes(search);
+    return matchFilter&&matchSearch;
+  });
+  document.getElementById('count-badge').textContent=rows.length+' records';
+  if(rows.length===0){
+    document.getElementById('table-body').innerHTML='<div class="empty">No records found</div>';
+    return;
+  }
+  document.getElementById('table-body').innerHTML=rows.map(r=>{
+    const sc=r.verdict==='MALICIOUS'?'score-bad':r.verdict==='SUSPICIOUS'?'score-warn':'score-good';
+    const vp=r.verdict==='MALICIOUS'?'vp-mal':r.verdict==='SUSPICIOUS'?'vp-sus':'vp-cln';
+    return `<div class="table-row">
+      <div class="row-id">#${r.id}</div>
+      <div class="row-target" title="${r.target}">${r.target}</div>
+      <div class="row-type">${r.type}</div>
+      <div class="row-score ${sc}">${r.malicious}/${r.total}</div>
+      <div><span class="verdict-pill ${vp}">${r.verdict}</span></div>
+      <div style="font-size:10px;color:#4a5568">${r.clean} clean / ${r.suspicious} sus</div>
+      <div class="row-time">${r.scanned_at}</div>
+    </div>`;
+  }).join('');
+}
+
+loadData();
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>
