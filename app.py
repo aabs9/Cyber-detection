@@ -271,9 +271,9 @@ def stats():
         "breakdown": breakdown
     })
 
-@app.route("/")
+@app.route('/')
 def home():
-    return "Cyber Threat Detection Platform is running!"
+    return send_from_directory('.', 'index.html')
 
 @app.route("/app")
 def serve_index():
